@@ -1,7 +1,10 @@
-# Agent-Based Learning Simulation Framework
+# The Value of Self-Deception: Simulation Framework
 
 This repository contains a comprehensive framework for simulating agent decision-making and learning processes used in the article "The Value of Self-Deception: Implications of Conflict in
 Dual-Process Action Selection"
+
+The simulations demonstrate conditions under which agents learn to value bias (Simulation A) and uncertainty (Simulation B), and learn to devalue bias towards unstably noisy information sources (Simulation C).
+
 ## Project Structure
 
 ### 1. Core Logic
