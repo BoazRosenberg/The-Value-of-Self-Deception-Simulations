@@ -12,7 +12,7 @@ sim3 = read_csv(file.path(data_dir,"simulation_C.csv")) %>%
 
 sim3summ = sim3 %>% group_by(bias,temp_bias,epoch) %>%
   summarise(base_EV = mean(EV),
-            action  = mean(policy),
+            action  = mean(action),
             cost = mean(C)) %>% 
   mutate(EV = base_EV - cost)
 } # load data and summarize
@@ -30,7 +30,7 @@ save_dir = "plots/Simulation C/"
   
   width = 4
   height = 3
-  dpi = 400
+  dpi = 300
   
 } # Global settings
 
@@ -88,10 +88,7 @@ for (i in c(1, 2,3, max(sim3summ$epoch))) {
     
       geom_contour_filled(breaks = ev_breaks) +                             # Plot
       
-      scale_fill_manual(values = ev_colors,
-                        limits = range(ev_breaks),  
-                        guide = guide_colorbar(barheight = unit(4, "cm"),   # Colors
-                                               ticks = TRUE)) +
+      scale_fill_manual(values = ev_colors) +
       labs(x = expression(tau[temp]),
            y = expression(tau[cons]),
            fill = "Learnt Value") +
@@ -152,7 +149,7 @@ for (i in c(1, 2,3, max(sim3summ$epoch))) {
 
 { 
   action_levels <- floor(min(sim3summ$action)) : ceiling(max(sim3summ$action))
-  action_colors <- colorRampPalette(c("white", "#7a2e80"))(length(action_levels))
+  action_colors <- colorRampPalette(c("#F1DFF2", "#7a2e80"))(length(action_levels))
   
   for (i in 1:3) {
     
@@ -171,7 +168,7 @@ for (i in c(1, 2,3, max(sim3summ$epoch))) {
    g_pol <- ggplot( grid_action,
                     aes(x = temp_bias, y = bias, z = action)) +
       
-      geom_contour_filled(breaks = action_levels - 0.5) +         # Plot
+      geom_contour_filled(breaks = action_levels + 0.5) +         # Plot
      
       scale_fill_manual(values = action_colors) +                # Colors 
       labs( x = expression(tau[temp]),                            # Labels
@@ -179,7 +176,7 @@ for (i in c(1, 2,3, max(sim3summ$epoch))) {
             fill = "Action") +
       custom_theme() +                                            # Theme
       coord_fixed(expand = FALSE)+
-     theme(legend.position = "none")
+     theme(legend.position = "none") 
     
    # Save plot
     ggsave(filename = paste0(save_dir,"action", i, ".png"),
@@ -277,7 +274,7 @@ for (i in c(1, 2,3, max(sim3summ$epoch))) {
     
     ggsave(
       filename = paste0(save_dir, "action_colorbar.png"),
-      plot = actiony_bar,
+      plot = action_bar,
       width = 1.2,
       height = 3,
       dpi = dpi
