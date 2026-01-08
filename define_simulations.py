@@ -2,7 +2,7 @@ import numpy as np
 from functions import *
 from value_functions import *
 from agent import Agent
-from actions import create_policies, evaluate_policies
+from actions import create_actions, evaluate_actions
 
 def run_simulation_A(value_function_set, risk_seeking = False, name = "", Q_means = False,
 
@@ -25,9 +25,9 @@ def run_simulation_A(value_function_set, risk_seeking = False, name = "", Q_mean
 
     for i in range(n_copies):
         print("Copy:", i)
-        # Create policies for the agent
-        policies = create_policies(
-            additive_biases= S_hat(S=true_state[0],
+        # Create actions for the agent
+        actions = create_actions(
+            beliefs= S_hat(S=true_state[0],
                                    sigma=observation_noise,
                                    tau= np.linspace(np.min(biases), np.max(biases), n_actions),
                                    Q_means = True).flatten(),
@@ -48,7 +48,7 @@ def run_simulation_A(value_function_set, risk_seeking = False, name = "", Q_mean
             n_copies= 1,
             vf1=vf[0], # Action Selector
             vf2=vf[1], # Attentional Bias Controller
-            policies= policies,
+            actions= actions,
             name="A_" + name,
             Q_means= Q_means
         )
@@ -79,9 +79,9 @@ def run_simulation_B(value_function_set , true_state=(0, 1),resolution=10,
 
     for i in range(n_copies):
         print("Copy:", i)
-        # Create policies for the agent
-        policies = create_policies(
-            additive_biases= S_hat(S=true_state[0],
+        # Create actions for the agent
+        actions = create_actions(
+            beliefs= S_hat(S=true_state[0],
                                    sigma=np.max(observation_noise),
                                    tau= np.linspace(np.min(biases), np.max(biases), n_actions)).flatten(),
             vf=vf[0], # action selector
@@ -99,7 +99,7 @@ def run_simulation_B(value_function_set , true_state=(0, 1),resolution=10,
             n_copies=1,
             vf1=vf[0], # Action Selector
             vf2=vf[1], # Attentional Bias Controller
-            policies=policies,
+            actions=actions,
             name="B"
         )
 
@@ -117,14 +117,14 @@ def run_simulation_B(value_function_set , true_state=(0, 1),resolution=10,
     df_mean = df.groupby(['bias', 'observation_noise'],as_index=False).agg({
         'EV': 'mean',
         'S': 'mean',
-        'policy': 'mean'
+        'action': 'mean'
     }).reset_index()
 
     return df_mean
 
 def run_simulation_C(value_function_set, bias_range, temp_bias_range,
                      true_state, observation_noise, n_copies,
-                     resolution=100, n_policies=10, risk_seeking= False, Q_means = False,
+                     resolution=100, n_actions=10, risk_seeking= False, Q_means = False,
                      change_cost=0.1, n_epochs=40):
     """
     Run the agent simulation with specified parameters.
@@ -142,10 +142,10 @@ def run_simulation_C(value_function_set, bias_range, temp_bias_range,
 
         additive_bias = S_hat(S=true_state[0], sigma=observation_noise * 2 , # widening range
                               tau=np.linspace(bias_range[0], bias_range[1],
-                                              n_policies),
+                                              n_actions),
                               Q_means= True)   # bias from constant noise + bias from temporary noise
 
-        policies = create_policies(additive_biases=additive_bias.flatten(),
+        actions = create_actions(beliefs=additive_bias.flatten(),
                                    vf=vf[0], state=true_state, risk_seeking= risk_seeking)
 
         agent = Agent(prior=(0, 1),
@@ -157,7 +157,7 @@ def run_simulation_C(value_function_set, bias_range, temp_bias_range,
                       n_copies=1,
                       vf1=vf[0],  # action selector
                       vf2=vf[1],  # atentional bias controller
-                      policies=policies,
+                      actions=actions,
                       Q_means= Q_means)
 
         agent.multi_epochs(n_epochs)
@@ -171,11 +171,11 @@ def run_simulation_C(value_function_set, bias_range, temp_bias_range,
     print("Summarizing results...")
 
     # summarize by bias and temp_bias
-    # mean EV, S and policy
+    # mean EV, S and action
     df_mean = df.groupby(['bias', 'temp_bias','epoch'],as_index=False).agg({
         'EV': 'mean',
         'C': 'mean',
-        'policy': 'mean'
+        'action': 'mean'
     }).reset_index()
 
     return df_mean

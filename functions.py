@@ -51,11 +51,11 @@ def transformed_expectancy(mu, sigma, f, resolution=100):
 
     return expectancy
 
-def evaluate_policies_by_mu(policies, vf , sigma = 10, observation_noise = 30,
+def evaluate_actions_by_mu(actions, vf , sigma = 10, observation_noise = 30,
                             mu_range=[-10, 100], biases = [0.1,0.3,0.5,0.7,0.9],
                             resolution=100):
 
-        # region - evaluate policies by mu
+        # region - evaluate actions by mu
         # create z scores for weighted E[x] calculation
         Z_scores = np.linspace(-3, 3, resolution)
         densities = norm.pdf(Z_scores)
@@ -65,16 +65,16 @@ def evaluate_policies_by_mu(policies, vf , sigma = 10, observation_noise = 30,
         true_mus = np.linspace(mu_range[0], mu_range[1], resolution)
         p_mus = np.array([S_hat(mu, observation_noise, biases) for mu in true_mus])
 
-        # calculate the expected PDFs for each policy
-        policy_mus = np.array([policy[0] for policy in policies])
-        policy_sigmas = np.array([policy[1] for policy in policies])
+        # calculate the expected PDFs for each action
+        action_mus = np.array([action[0] for action in actions])
+        action_sigmas = np.array([action[1] for action in actions])
 
-        mus = p_mus + policy_mus[None,None,:]  # [mus, bias, policy]
-        sigmas = np.sqrt(sigma ** 2 + policy_sigmas ** 2)  # [policy]
+        mus = p_mus + action_mus[None,None,:]  # [mus, bias, action]
+        sigmas = np.sqrt(sigma ** 2 + action_sigmas ** 2)  # [action]
 
-        # calculate the expected values for each policy
-        values = Z_scores[:, None, None,None] * sigmas[None, None,None, :] + mus[None, :, :,:]  # sample values for each policy
-        f_values = vf(values)  # evaluate samples    [Z_values, mus, bias, policy]
+        # calculate the expected values for each action
+        values = Z_scores[:, None, None,None] * sigmas[None, None,None, :] + mus[None, :, :,:]  # sample values for each action
+        f_values = vf(values)  # evaluate samples    [Z_values, mus, bias, action]
 
         evaluations = np.sum(normalized_densities[:, None, None,None] * f_values, axis=0)  # weighted average of samples
         choice = np.argmax(evaluations, axis=2)  # [mus, bias]
@@ -83,18 +83,18 @@ def evaluate_policies_by_mu(policies, vf , sigma = 10, observation_noise = 30,
         # region - plot results
         plt.figure(figsize=(8, 6))
         plt.pcolormesh(true_mus, biases, choice.T, shading='auto', cmap='viridis')
-        plt.colorbar(label='Optimal policy')
+        plt.colorbar(label='Optimal action')
         plt.xlabel('true mu')
         plt.ylabel('Bias')
-        plt.title('Optimal policy heatmap')
+        plt.title('Optimal action heatmap')
         plt.show()
         # endregion
 
 
-def evaluate_policies_by_observation_noise(policies, vf, mu = 0,
+def evaluate_actions_by_observation_noise(actions, vf, mu = 0,
                             observation_noise_range=[1,50], biases=[0.1, 0.3, 0.5, 0.7, 0.9],
                             resolution=100):
-    # region - evaluate policies by mu
+    # region - evaluate actions by mu
     # create z scores for weighted E[x] calculation
     Z_scores = np.linspace(-3, 3, resolution)
     densities = norm.pdf(Z_scores)
@@ -106,18 +106,18 @@ def evaluate_policies_by_observation_noise(policies, vf, mu = 0,
     sigma = observation_noise * 0.8303150
     p_mus = np.array([S_hat(mu, noise, biases) for noise in observation_noise])
 
-    # calculate the expected PDFs for each policy
-    policy_mus = np.array([policy[0] for policy in policies])
-    policy_sigmas = np.array([policy[1] for policy in policies])
+    # calculate the expected PDFs for each action
+    action_mus = np.array([action[0] for action in actions])
+    action_sigmas = np.array([action[1] for action in actions])
 
-    mus = p_mus + policy_mus[None, None, :]  # [observation_noise, bias, policy]
-    sigmas = np.sqrt(sigma[:,None,None] ** 2 + policy_sigmas[None,None,:] ** 2)  # [observation_noise, bias policy]
+    mus = p_mus + action_mus[None, None, :]  # [observation_noise, bias, action]
+    sigmas = np.sqrt(sigma[:,None,None] ** 2 + action_sigmas[None,None,:] ** 2)  # [observation_noise, bias action]
 
-    # calculate the expected values for each policy
+    # calculate the expected values for each action
     values = Z_scores[:   , None, None, None] *\
              sigmas  [None, :   , :   , :] + \
-             mus     [None, :   , :   , :]  # sample values for each policy
-    f_values = vf(values)  # evaluate samples    [Z_values, mus, bias, policy]
+             mus     [None, :   , :   , :]  # sample values for each action
+    f_values = vf(values)  # evaluate samples    [Z_values, mus, bias, action]
 
     evaluations = np.sum(normalized_densities[:, None, None, None] * f_values, axis=0)  # weighted average of samples
     choice = np.argmax(evaluations, axis=2)  # [mus, bias]
@@ -126,10 +126,10 @@ def evaluate_policies_by_observation_noise(policies, vf, mu = 0,
     # region - plot results
     plt.figure(figsize=(8, 6))
     plt.pcolormesh(observation_noise, biases, choice.T, shading='auto', cmap='viridis')
-    plt.colorbar(label='Optimal policy')
+    plt.colorbar(label='Optimal action')
     plt.xlabel('observation noise')
     plt.ylabel('Bias')
-    plt.title('Optimal policy heatmap')
+    plt.title('Optimal action heatmap')
     plt.show()
     # endregion
 
@@ -172,29 +172,29 @@ def sum_sigmoidal(a,b):
 
 # endregion
 
-def choose_policy(vf, mu, sigma, policies, resolution=100, output = "choice"):
-    # evaluate policies for each agent - according to its perceived current state
+def choose_action(vf, mu, sigma, actions, resolution=100, output = "choice"):
+    # evaluate actions for each agent - according to its perceived current state
     # vf: function
     # mu, sigma = np.arrays for perceived states
-    #policies = list of tuples (mu, sigma)
+    #actions = list of tuples (mu, sigma)
 
     # assign value function
     f = vf
 
-    policy_mus = np.array([policy[0] for policy in policies])
-    policy_sigmas = np.array([policy[1] for policy in policies])
+    action_mus = np.array([action[0] for action in actions])
+    action_sigmas = np.array([action[1] for action in actions])
 
     # prepare Z scores and densities
     Z_scores = np.linspace(-3, 3, resolution)
     densities = norm.pdf(Z_scores)
     normalized_densities = densities / np.sum(densities)
 
-    # calculate the expected PDFs for each policy
-    mus = mu[np.newaxis, :] + policy_mus[:, np.newaxis]  # [ offer, agent]
-    sigmas = np.sqrt(sigma[np.newaxis, :] ** 2 + policy_sigmas[:, np.newaxis] ** 2)  # [ offer, agent]
+    # calculate the expected PDFs for each action
+    mus = mu[np.newaxis, :] + action_mus[:, np.newaxis]  # [ offer, agent]
+    sigmas = np.sqrt(sigma[np.newaxis, :] ** 2 + action_sigmas[:, np.newaxis] ** 2)  # [ offer, agent]
 
-    # calculate the expected values for each policy
-    values = Z_scores[:, None, None] * sigmas[None, :, :] + mus[None, :, :]  # sample values for each policy
+    # calculate the expected values for each action
+    values = Z_scores[:, None, None] * sigmas[None, :, :] + mus[None, :, :]  # sample values for each action
     f_values = f(values)  # evaluate samples
     expectancy = np.sum(normalized_densities[:, None, None] * f_values, axis=0)  # weighted average of samples
 
