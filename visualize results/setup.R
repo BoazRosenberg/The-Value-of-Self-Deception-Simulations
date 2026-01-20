@@ -1,7 +1,7 @@
 library(tidyverse)
 
 
-data_dir = normalizePath(file.path("..", "csv files"))
+data_dir = normalizePath(file.path("..", "results"))
 
 
 logit = function(x){
