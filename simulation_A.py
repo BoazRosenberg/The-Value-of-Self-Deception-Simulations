@@ -4,7 +4,11 @@ from define_simulations import run_simulation_A
 
 if __name__ == "__main__":
 
+    # value functions for each set are defined in value_functions.py
+    # and could be adjusted by the user if desired
+
     for value_function_set_name in ["diminishing", "increasing"]:
+
         value_function_set = vfs[value_function_set_name]  # Choose the set of value functions to use
 
         n_copies = 30

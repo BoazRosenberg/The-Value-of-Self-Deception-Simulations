@@ -10,15 +10,15 @@ import numpy as np
 # regionSet 1: Decreasing marginal value
 
 def MF(x):
-    """Model-free system with diminishing returns."""
+    """Reflects a Model-free evaluation of states."""
     return x - (np.power(np.exp(0.1),-x))
 
 def MB(x):
-    """Model-based system with diminishing returns."""
+    """Reflects a Model-based evaluation of states. ."""
     return x - (np.power(np.exp(0.01),-x))
 
 def MB_plus_MF(x):
-    """Combined model-based and model-free systems with diminishing returns."""
+    """Combined model-based and model-free evaluation."""
     return (MB(x) + MF(x))/2
 # endregion
 
@@ -38,12 +38,15 @@ def MB2_plus_MF2(x):
 
 # [V_1: Action Selector, V_2: Attentional Bias Controller]
 
-vfs = {"diminishing": [MB_plus_MF,   MB],
-       "increasing":  [MB2_plus_MF2, MB2], }
+vfs = {"diminishing": [MB_plus_MF,   # vf used by Action Selector
+                       MB],          # vf used by Attentional Bias Controller
+
+       "increasing":  [MB2_plus_MF2, # same as above but for increasing marginal value
+                       MB2], }
 
 # endregion
 
-# Test plots
+# visualize value functions
 if __name__ == "__main__":
 
     # Choose a set of value functions to plot
