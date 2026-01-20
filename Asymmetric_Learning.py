@@ -1,9 +1,5 @@
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-from matplotlib.cm import ScalarMappable
-from matplotlib.colors import Normalize
 
 def update_rule(Q, outcomes, eta_0, tau):
     # Q shape: (n_eta, n_tau, n_copies)
@@ -59,17 +55,20 @@ def sample_beta_mode_concentration(mode, concentration, size=1):
 
     return np.random.beta(alpha, beta, size=size)
 
-if __name__ == "__main__":
-
-    #eta = sample_beta_mode_concentration(mode=0.1, concentration=10, size=100)
+def run_default():
     eta = np.random.beta(2, 10, size=100)
     tau = np.linspace(0, 1, 100)
 
     Qs = learning_process(eta, tau, n_rounds=300, n_copies=100)
     Qs.to_csv("S_hat.csv", index=False)    # save to csv
 
-    # calculate mean Q for each value of tau
-    mean_Qs = Qs.groupby("tau")["Q"].mean().reset_index()
-    mean_Qs.to_csv("Mean_S_hat.csv", index=False)
 
+
+if __name__ == "__main__":
+
+    eta = np.random.beta(2, 10, size=100)
+    tau = np.linspace(0, 1, 100)
+
+    Qs = learning_process(eta, tau, n_rounds=300, n_copies=100)
+    Qs.to_csv("S_hat.csv", index=False)    # save to csv
     print("Simulation completed and results saved.")

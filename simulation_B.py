@@ -18,8 +18,8 @@ if __name__ == "__main__":
                      true_state=(0,1),
                      risk_seeking= value_function_set_name == "increasing" )
 
-    df.to_csv(f"csv files/simulation_B.csv", index=False)
-    print(f"Simulation complete. Results saved for agent: simulation_B")
+    df.to_csv("results/simulation_B.csv", index=False)
+    print(f"Simulation complete")
 
 
 

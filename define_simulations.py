@@ -1,8 +1,13 @@
-import numpy as np
 from functions import *
 from value_functions import *
 from agent import Agent
-from actions import create_actions, evaluate_actions
+from actions import create_actions
+from multiprocessing import Manager
+from concurrent.futures import ProcessPoolExecutor
+from tqdm import tqdm
+import time
+
+
 
 def run_simulation_A(value_function_set, risk_seeking = False, name = "", Q_means = False,
 
@@ -65,7 +70,6 @@ def run_simulation_A(value_function_set, risk_seeking = False, name = "", Q_mean
     return df
 
 
-
 def run_simulation_B(value_function_set , true_state=(0, 1),resolution=10,
                      bias_range=(0,1), observation_noise_range=(0.1,50),
                      n_actions=10, n_copies=5, risk_seeking = False):
@@ -75,10 +79,9 @@ def run_simulation_B(value_function_set , true_state=(0, 1),resolution=10,
 
     # Select value functions based on the chosen set
     vf = value_function_set
-    print("Running simulation B...")
 
-    for i in range(n_copies):
-        print("Copy:", i)
+    for i in tqdm(range(n_copies), desc="Running Simulation B", unit="iteration"):
+
         # Create actions for the agent
         actions = create_actions(
             beliefs= S_hat(S=true_state[0],
@@ -122,60 +125,133 @@ def run_simulation_B(value_function_set , true_state=(0, 1),resolution=10,
 
     return df_mean
 
-def run_simulation_C(value_function_set, bias_range, temp_bias_range,
-                     true_state, observation_noise, n_copies,
-                     resolution=100, n_actions=10, risk_seeking= False, Q_means = False,
-                     change_cost=0.1, n_epochs=40):
-    """
-    Run the agent simulation with specified parameters.
 
-    This function sets up and runs a simulation of an agent with bias learning,
-    using either diminishing or increasing value functions.
-    """
+
+
+def _run_single_copy_C(i, value_function_set, bias_range, temp_bias_range,
+                       true_state, observation_noise, resolution,
+                       n_actions, risk_seeking, Q_means,
+                       change_cost, n_epochs, progress_counter):
+    def report_progress():
+        progress_counter.value += 1
+
     vf = value_function_set
+
     biases = np.linspace(bias_range[0], bias_range[1], resolution)
     temp_biases = np.linspace(temp_bias_range[0], temp_bias_range[1], resolution)
 
-    print("Running simulation C...")
-    for i in range(n_copies):
-        print("Copy:", i)
+    additive_bias = S_hat(
+        S=true_state[0],
+        sigma=observation_noise * 2,
+        tau=np.linspace(bias_range[0], bias_range[1], n_actions),
+        Q_means=True
+    )
 
-        additive_bias = S_hat(S=true_state[0], sigma=observation_noise * 2 , # widening range
-                              tau=np.linspace(bias_range[0], bias_range[1],
-                                              n_actions),
-                              Q_means= True)   # bias from constant noise + bias from temporary noise
+    actions = create_actions(
+        beliefs=additive_bias.flatten(),
+        vf=vf[0],
+        state=true_state,
+        risk_seeking=risk_seeking
+    )
 
-        actions = create_actions(beliefs=additive_bias.flatten(),
-                                   vf=vf[0], state=true_state, risk_seeking= risk_seeking)
+    agent = Agent(
+        prior=(0, 1),
+        change_cost=change_cost,
+        biases=np.repeat(np.repeat(biases, len(temp_biases)), len(observation_noise)),
+        temp_biases=np.repeat(np.tile(temp_biases, len(biases)), len(observation_noise)),
+        observation_noise=np.tile(observation_noise, len(biases) * len(temp_biases)),
+        temp_noise=observation_noise,
+        n_copies=1,
+        vf1=vf[0],
+        vf2=vf[1],
+        actions=actions,
+        Q_means=Q_means
+    )
 
-        agent = Agent(prior=(0, 1),
-                      change_cost= change_cost,
-                      biases=np.repeat(np.repeat(biases, len(temp_biases)), len(observation_noise)),
-                      temp_biases=np.repeat(np.tile(temp_biases, len(biases)), len(observation_noise)),
-                      observation_noise=np.tile(observation_noise, len(biases) * len(temp_biases)),
-                      temp_noise=observation_noise,
-                      n_copies=1,
-                      vf1=vf[0],  # action selector
-                      vf2=vf[1],  # atentional bias controller
-                      actions=actions,
-                      Q_means= Q_means)
+    agent.multi_epochs(n_epochs, progress_callback=report_progress)
 
-        agent.multi_epochs(n_epochs)
-        temp_df = agent.df.copy()
-        temp_df['copy'] = i
-        if i == 0:
-            df = temp_df
-        else:
-            df = pd.concat([df, temp_df.dropna(axis=1, how='all')], ignore_index=True)
+    df = agent.df.copy()
+    df["copy"] = i
+    return df
 
-    print("Summarizing results...")
 
-    # summarize by bias and temp_bias
-    # mean EV, S and action
-    df_mean = df.groupby(['bias', 'temp_bias','epoch'],as_index=False).agg({
-        'EV': 'mean',
-        'C': 'mean',
-        'action': 'mean'
-    }).reset_index()
+def run_simulation_C(value_function_set, bias_range, temp_bias_range,
+                     true_state, observation_noise, n_copies,
+                     resolution=100, n_actions=10, risk_seeking=False,
+                     Q_means=False, change_cost=0.1, n_epochs=40,
+                     parallel=True, n_jobs=None):
+    manager = Manager()
+    progress_counter = manager.Value("i", 0)
+
+    total_steps = n_copies * n_epochs
+    dfs = []
+
+    if parallel and n_copies > 1:
+        with ProcessPoolExecutor(max_workers=n_jobs) as executor:
+            futures = [
+                executor.submit(
+                    _run_single_copy_C,
+                    i,
+                    value_function_set,
+                    bias_range,
+                    temp_bias_range,
+                    true_state,
+                    observation_noise,
+                    resolution,
+                    n_actions,
+                    risk_seeking,
+                    Q_means,
+                    change_cost,
+                    n_epochs,
+                    progress_counter
+                )
+                for i in range(n_copies)
+            ]
+
+            pbar = tqdm(total=total_steps, desc="Running epochs", unit="epoch")
+
+            last = 0
+            while any(not f.done() for f in futures):
+                current = progress_counter.value
+                pbar.update(current - last)
+                last = current
+                time.sleep(0.1)
+
+            for f in futures:
+                dfs.append(f.result())
+
+    else:
+        for i in tqdm(range(n_copies), desc="Running copies", unit="copy"):
+            dfs.append(
+                _run_single_copy_C(
+                    i,
+                    value_function_set,
+                    bias_range,
+                    temp_bias_range,
+                    true_state,
+                    observation_noise,
+                    resolution,
+                    n_actions,
+                    risk_seeking,
+                    Q_means,
+                    change_cost,
+                    n_epochs,
+                    progress_counter
+                )
+            )
+
+
+
+    df = pd.concat(dfs, ignore_index=True)
+
+    df_mean = (
+        df.groupby(["bias", "temp_bias", "epoch"], as_index=False)
+          .agg({
+              "EV": "mean",
+              "C": "mean",
+              "action": "mean"
+          })
+          .reset_index(drop=True)
+    )
 
     return df_mean

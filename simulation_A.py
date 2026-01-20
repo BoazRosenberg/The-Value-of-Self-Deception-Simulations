@@ -25,7 +25,7 @@ if __name__ == "__main__":
         )
 
         # save in csv_files folder
-        df.to_csv(f"csv files/simulation_A_{value_function_set_name}.csv", index=False)
+        df.to_csv(f"results/simulation_A_{value_function_set_name}.csv", index=False)
         print(f"Simulation complete. Results saved for value function set: {value_function_set_name}")
 
 

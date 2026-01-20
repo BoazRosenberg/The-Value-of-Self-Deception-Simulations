@@ -2,21 +2,15 @@ import numpy as np
 from scipy.stats import norm
 import pickle
 import matplotlib.pyplot as plt
-from scipy.optimize import fsolve
-import math
-from scipy.integrate import quad
 import scipy.stats as stats
-from scipy.optimize import minimize_scalar
 import pandas as pd
-import os
 
 
 # Approximate the perceived mu for different biases and noise
 # Samples from a df created in "estimate terminal Q.py"
 
 def load_S_hat_df():
-    dir = "estimate learning processes"
-    df = pd.read_csv(os.path.join(dir, "S_hat.csv"))[['tau', 'Q']]
+    df = pd.read_csv("S_hat.csv")[['tau', 'Q']]
     mean_Q = df.groupby(['tau'])['Q'].mean().reset_index()
     grouped = df.groupby('tau')['Q'].apply(np.array)
     taus = grouped.index.to_numpy()

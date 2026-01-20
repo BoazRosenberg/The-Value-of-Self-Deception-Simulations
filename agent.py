@@ -193,7 +193,7 @@ class Agent:
             self.df = pd.concat([self.df.dropna(axis=1, how='all'), df.dropna(axis=1, how='all')], ignore_index=True)
 
     # Run multiple epochs with temporary bias (simulation C)
-    def multi_epochs(self, n_epochs, record=True):
+    def multi_epochs(self, n_epochs, record=True, progress_callback=None):
 
         # Base cycle of temporary noise SDs
         cycle = np.array([0, 1])
@@ -203,19 +203,12 @@ class Agent:
 
         n_epochs = len(temp_sd_eras)
 
-        progress_bar = tqdm(range(n_epochs), desc='Epochs', unit='epoch', leave=True)
-        for i in progress_bar:
+        for i in range(n_epochs):
+
             self.sd_era = temp_sd_eras[i]
             self.update_S_hat()
-            start_time = time.time()
             self.single_epoch(record=record)
-            progress_bar.update(1)
-
-            # Update progress bar description with time left and estimated end time
-            if i < n_epochs - 1:  progress_bar.set_description(time_left(start_time, n_epochs, i))
-
-        # Close the progress bar after the loop
-        progress_bar.close()
+            progress_callback()
 
 
     # endregion
@@ -229,12 +222,12 @@ class Agent:
             pickle.dump(self, file)
         print("Model saved as: ", model_name)
 
-    def save_csv(self, path="csv files/", name=False):
+    def save_csv(self, path="results/", name=False):
         if not name:
             name = self.name
         self.df.to_csv(path + str(name) + "_results.csv")
 
-    def update_csv(self, path="csv files/", name=False, agent_id=False):
+    def update_csv(self, path="results/", name=False, agent_id=False):
         if not name:
             name = self.name
 

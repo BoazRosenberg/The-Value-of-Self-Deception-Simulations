@@ -5,6 +5,9 @@ from define_simulations import run_simulation_C
 
 if __name__ == "__main__":
 
+    from multiprocessing import freeze_support
+    freeze_support()
+
     # region  - run simulation
     change_cost = 0.05
     n_epochs = 40
@@ -36,6 +39,6 @@ if __name__ == "__main__":
                             )
 
     # save in csv_files folder
-    df.to_csv("csv files/simulation_C.csv", index=False)
+    df.to_csv("results/simulation_C.csv", index=False)
 
     print(f"Simulation complete. Results saved for agent: simulation_C")
