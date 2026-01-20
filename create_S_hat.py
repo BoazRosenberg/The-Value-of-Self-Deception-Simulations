@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 def update_rule(Q, outcomes, eta_0, tau):
     # Q shape: (n_eta, n_tau, n_copies)
@@ -35,8 +36,7 @@ def learning_process(eta, tau, n_rounds=100, n_copies=1000):
     outcomes = np.random.normal(0, 1, size=(n_rounds, n_copies))
 
     # iterate over rounds (cannot vectorize across rounds due to recursion)
-    for t in range(n_rounds):
-        print(t)
+    for t in tqdm(range(n_rounds), desc="Learning rounds", unit="round"):
         Q = update_rule(Q, outcomes[t], eta, tau)
 
     # Reshape Q into long format: (eta, tau, copy)
