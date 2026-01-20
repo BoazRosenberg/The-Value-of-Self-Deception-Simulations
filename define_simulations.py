@@ -26,10 +26,7 @@ def run_simulation_A(value_function_set, risk_seeking = False, name = "", Q_mean
     observation_noise = np.array([observation_noise])
     temp_biases = np.array([0.5])
 
-    print(f"Running simulation A: {name}...")
-
-    for i in range(n_copies):
-        print("Copy:", i)
+    for i in tqdm(range(n_copies), desc=f"Running Simulation A: {name}", unit="iteration"):
         # Create actions for the agent
         actions = create_actions(
             beliefs= S_hat(S=true_state[0],
