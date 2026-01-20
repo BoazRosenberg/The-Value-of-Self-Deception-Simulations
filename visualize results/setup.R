@@ -2,6 +2,7 @@ library(tidyverse)
 
 
 data_dir = normalizePath(file.path("..", "results"))
+S_hat_dir = normalizePath(file.path("..", "S_hat.csv"))
 
 
 logit = function(x){
@@ -26,7 +27,7 @@ custom_theme <- function(base_size = 14, base_family = "") {
       
       
     )
-  }
+}
 
 
 
