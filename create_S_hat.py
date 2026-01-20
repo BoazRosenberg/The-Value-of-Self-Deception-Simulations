@@ -57,7 +57,7 @@ def sample_beta_mode_concentration(mode, concentration, size=1):
 
 def run_default():
     eta = np.random.beta(2, 10, size=100)
-    tau = np.linspace(0, 1, 100)
+    tau = np.linspace( 1e-8, 1 - 1e-8, 100)
 
     Qs = learning_process(eta, tau, n_rounds=300, n_copies=100)
     Qs.to_csv("S_hat.csv", index=False)    # save to csv
@@ -67,7 +67,7 @@ def run_default():
 if __name__ == "__main__":
 
     eta = np.random.beta(2, 10, size=100)
-    tau = np.linspace(0, 1, 100)
+    tau = np.linspace(1e-8, 1 - 1e-8, 100)
 
     Qs = learning_process(eta, tau, n_rounds=300, n_copies=100)
     Qs.to_csv("S_hat.csv", index=False)    # save to csv
