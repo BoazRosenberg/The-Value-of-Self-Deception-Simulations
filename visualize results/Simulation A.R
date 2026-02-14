@@ -2,7 +2,7 @@ library(readr)
 library(tidyverse)
 source("setup.R")
 
-# Load data
+#### Load data ####
 
 sim_A = data.frame()
 
@@ -20,7 +20,7 @@ sim_A = bind_rows(sim_A, temp_summ)
 
 }
 
-#### Select Quantiles and Plot ####
+####   Plot   ####
 
 {
   g = ggplot(sim_A,aes( x= bias, y = EV_centered, fill = EV_centered))+

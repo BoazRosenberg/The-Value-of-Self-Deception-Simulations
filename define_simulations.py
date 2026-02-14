@@ -139,7 +139,7 @@ def _run_single_copy_C(i, value_function_set, bias_range, temp_bias_range,
 
     additive_bias = S_hat(
         S=true_state[0],
-        sigma=observation_noise * 2,
+        sigma= observation_noise * 3, # should be times 2 for source I + II noise, but times 3 to cover more range
         tau=np.linspace(bias_range[0], bias_range[1], n_actions),
         Q_means=True
     )
@@ -183,59 +183,40 @@ def run_simulation_C(value_function_set, bias_range, temp_bias_range,
     total_steps = n_copies * n_epochs
     dfs = []
 
-    if parallel and n_copies > 1:
-        with ProcessPoolExecutor(max_workers=n_jobs) as executor:
-            futures = [
-                executor.submit(
-                    _run_single_copy_C,
-                    i,
-                    value_function_set,
-                    bias_range,
-                    temp_bias_range,
-                    true_state,
-                    observation_noise,
-                    resolution,
-                    n_actions,
-                    risk_seeking,
-                    Q_means,
-                    change_cost,
-                    n_epochs,
-                    progress_counter
-                )
-                for i in range(n_copies)
-            ]
 
-            pbar = tqdm(total=total_steps, desc="Running epochs", unit="epoch")
-
-            last = 0
-            while any(not f.done() for f in futures):
-                current = progress_counter.value
-                pbar.update(current - last)
-                last = current
-                time.sleep(0.1)
-
-            for f in futures:
-                dfs.append(f.result())
-
-    else:
-        for i in tqdm(range(n_copies), desc="Running copies", unit="copy"):
-            dfs.append(
-                _run_single_copy_C(
-                    i,
-                    value_function_set,
-                    bias_range,
-                    temp_bias_range,
-                    true_state,
-                    observation_noise,
-                    resolution,
-                    n_actions,
-                    risk_seeking,
-                    Q_means,
-                    change_cost,
-                    n_epochs,
-                    progress_counter
-                )
+    with ProcessPoolExecutor(max_workers=n_jobs) as executor:
+        futures = [
+            executor.submit(
+                _run_single_copy_C,
+                i,
+                value_function_set,
+                bias_range,
+                temp_bias_range,
+                true_state,
+                observation_noise,
+                resolution,
+                n_actions,
+                risk_seeking,
+                Q_means,
+                change_cost,
+                n_epochs,
+                progress_counter
             )
+            for i in range(n_copies)
+        ]
+
+        pbar = tqdm(total=total_steps, desc="Running epochs", unit="epoch")
+
+        last = 0
+        while any(not f.done() for f in futures):
+            current = progress_counter.value
+            pbar.update(current - last)
+            last = current
+            time.sleep(0.1)
+
+        for f in futures:
+            dfs.append(f.result())
+
 
 
 

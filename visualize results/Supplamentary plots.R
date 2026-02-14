@@ -40,9 +40,11 @@ df_beta = data.frame(x,
 
 
 
-##### Heatmap of learnt S hat values for each value of tau ####
+#### Heatmap of learnt S hat values for each value of tau ####
 
 #  ** Heavy plot **  may take a while
+
+# Represents S hat values for observations ~ N(0,1)
 
 S_hat <- read_csv(S_hat_dir)
 

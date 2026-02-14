@@ -65,6 +65,7 @@ class Agent:
         self.prior = prior
         self.sigma =  np.repeat(self.observation_noise[:,np.newaxis], self.n_copies, axis = 1) * (1- forgetting_factor)
         self.S = np.full((self.n_biases, self.n_copies), float(prior[0]))  # true states
+        self.calc_S_hat_components()
         self.update_S_hat()
         self.C =  np.zeros((self.n_biases, self.n_copies)) # cumulative cost
 
@@ -92,22 +93,25 @@ class Agent:
     # region - Main methods
 
     # Update agents S_hat
-    def update_S_hat(self):
-        # Sigma is constant for any given observation noise
 
-        S_hat_I = S_hat(S=self.S,
-                    sigma=np.repeat(self.observation_noise[:, np.newaxis], self.n_copies, axis=1),
-                    tau=self.biases,
-                     Q_means = self.Q_means)
+    def calc_S_hat_components(self):
+
+        self.S_hat_I = S_hat(S=self.S,
+                            sigma=np.repeat(self.observation_noise[:, np.newaxis], self.n_copies, axis=1),
+                            tau=self.biases,
+                            Q_means = self.Q_means)
 
         # additional S_hat based on temporary uncertainty
-        S_hat_II = S_hat(S=0,
-                    sigma=np.repeat(self.temp_noise * self.observation_noise[:, np.newaxis] * self.sd_era,
-                                   self.n_copies, axis=1),
-                    tau=self.temp_biases,
-                    Q_means = self.Q_means)
+        self.S_hat_II = S_hat(S=0,
+                              sigma=np.repeat(self.temp_noise * self.observation_noise[:, np.newaxis] ,
+                                           self.n_copies, axis=1),
+                              tau=self.temp_biases,
+                              Q_means = self.Q_means)
 
-        self.S_hat = S_hat_I + S_hat_II
+    def update_S_hat(self):
+        # sd_era is 0 or 1 corresponding to whether the current epoch's transiently noisy information source
+        # is noisy or not
+        self.S_hat = self.S_hat_I + self.S_hat_II * self.sd_era 
 
     # Calculate the mu and sigma for expected PDFs for current action
     def integrate_action_and_state(self):
@@ -160,7 +164,6 @@ class Agent:
         # endregion
 
         # region - Pay cost and update perceived state
-        # Cost of change : 0 for current action, change_cost for rest
         x_idx, y_idx = np.indices(self.action.shape)
         cost_payed = cost[self.action, x_idx, y_idx]
 

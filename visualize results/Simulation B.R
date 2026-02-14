@@ -4,6 +4,9 @@ library(viridis)
 library(mgcv)
 source("setup.R")
 
+
+#### Load Data ####
+
 sim_B = read_csv(file.path(data_dir,"simulation_B.csv"))
 
 {
@@ -21,7 +24,9 @@ sim_B = read_csv(file.path(data_dir,"simulation_B.csv"))
   )
   grid$EV <- predict(gam_fit, newdata = grid)
 } # Smooth results
-  
+
+####   Plot   ####
+
 {
  g =  ggplot(grid, aes(x = observation_noise, y = bias, z = EV)) +
     geom_contour_filled(bins = 10) +
@@ -37,13 +42,14 @@ sim_B = read_csv(file.path(data_dir,"simulation_B.csv"))
  
  plot(g)
   
-}# Plot
+}# Create Plot
 
+{
 ggsave(
   filename = paste0("plots/sim_B.png"),
   plot = g,
   width = 8, height = 6, dpi = 600)
-
+} # Save
 
 
 

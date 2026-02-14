@@ -2,7 +2,6 @@ import numpy as np
 from value_functions import vfs
 from define_simulations import run_simulation_C
 
-
 if __name__ == "__main__":
 
     from multiprocessing import freeze_support
@@ -18,12 +17,12 @@ if __name__ == "__main__":
     temp_bias_range = bias_range
 
     value_function_set =  "diminishing"
-    Q_means  = False
+    Q_means  = False  # Should the simulation use mean S_hats or randomly sampled S_hats.
 
     vf = vfs[value_function_set]
     true_state = (0, 1)
     observation_noise = np.array([5])
-    n_actions = 5
+    n_actions = 15
 
     df = run_simulation_C( value_function_set= vf,
                             bias_range= bias_range,

@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from collections import deque
+
 
 def update_rule(Q, outcomes, eta_0, tau):
     # Q shape: (n_eta, n_tau, n_copies)
@@ -22,7 +24,7 @@ def update_rule(Q, outcomes, eta_0, tau):
     Q = Q + lr * pe
     return Q
 
-def learning_process(eta, tau, n_rounds=100, n_copies=1000):
+def learning_process(eta, tau, n_rounds=300, n_copies=100, N_last_mean = 1):
     eta = np.array(eta)
     tau = np.array(tau)
 
@@ -31,6 +33,7 @@ def learning_process(eta, tau, n_rounds=100, n_copies=1000):
 
     # initialize Q
     Q = np.full((n_eta, n_tau, n_copies), 0)
+    last_Qs = deque(maxlen= N_last_mean)  # to store last Qs
 
     # generate outcomes: standard normal samples per round and copy
     outcomes = np.random.normal(0, 1, size=(n_rounds, n_copies))
@@ -38,6 +41,9 @@ def learning_process(eta, tau, n_rounds=100, n_copies=1000):
     # iterate over rounds (cannot vectorize across rounds due to recursion)
     for t in tqdm(range(n_rounds), desc="Learning rounds", unit="round"):
         Q = update_rule(Q, outcomes[t], eta, tau)
+        last_Qs.append(Q.copy())
+
+    Q = np.mean(np.array(last_Qs), axis=0)  # average over last N Qs
 
     # Reshape Q into long format: (eta, tau, copy)
     eta_grid, tau_grid, copy_grid = np.meshgrid(eta, tau, np.arange(n_copies), indexing="ij")
@@ -66,9 +72,13 @@ def run_default():
 
 if __name__ == "__main__":
 
-    eta = np.random.beta(2, 10, size=100)
+    eta = np.random.beta(2.5, 50, size=100)
     tau = np.linspace(1e-8, 1 - 1e-8, 100)
 
     Qs = learning_process(eta, tau, n_rounds=300, n_copies=100)
     Qs.to_csv("S_hat.csv", index=False)    # save to csv
+
+    #Qs_last_10 = learning_process(eta, tau, n_rounds=300, n_copies=100, N_last_mean= 10)
+    #Qs_last_10.to_csv("S_hat_sim_C.csv", index=False)  # save to csv
     print("Simulation completed and results saved.")
+
